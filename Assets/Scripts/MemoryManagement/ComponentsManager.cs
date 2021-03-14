@@ -7,8 +7,8 @@ using UnityEngine;
 using InnerType = System.Collections.Generic.Dictionary<uint, IComponent>;
 using AllComponents = System.Collections.Generic.Dictionary<uint, System.Collections.Generic.Dictionary<uint, IComponent>>;
 #else
-using InnerType = Array<IComponent>;
-using AllComponents = System.Collections.Generic.Dictionary<uint, Array<IComponent>>;
+//using InnerType = ...; // TODO CHANGEZ MOI, UTILISEZ VOTRE PROPRE TYPE ICI
+using AllComponents = System.Collections.Generic.Dictionary<uint, IComponent[]>; // DONE CHANGEZ MOI, UTILISEZ VOTRE PROPRE TYPE ICI
 #endif
 
 // Appeler GetHashCode sur un Type est couteux. Cette classe sert a precalculer le hashcode
@@ -51,7 +51,7 @@ internal class ComponentsManager : Singleton<ComponentsManager>
         {
             toPrint += $"{type}: \n";
 #if !BAD_PERF
-            for(uint i = 0; i < type.Value.Length; i++)
+            for(int i = 0; i < type.Value.Length; i++)
 #else
             foreach (var component in type.Value)
 #endif
@@ -73,25 +73,26 @@ internal class ComponentsManager : Singleton<ComponentsManager>
     {
         if (!_allComponents.ContainsKey(TypeRegistry<T>.typeID))
         {
-            _allComponents[TypeRegistry<T>.typeID] = new InnerType(entitiesCount);
+            //_allComponents[TypeRegistry<T>.typeID] = new Dictionary<uint, IComponent>();
+            _allComponents[TypeRegistry<T>.typeID] = new IComponent[entitiesCount];
         }
-        _allComponents[TypeRegistry<T>.typeID].Set(entityID, component);   
+        _allComponents[TypeRegistry<T>.typeID][entityID] = component;   
     }
     public void RemoveComponent<T>(EntityComponent entityID) where T : IComponent
     {
-        _allComponents[TypeRegistry<T>.typeID].Remove(entityID);
+        _allComponents[TypeRegistry<T>.typeID][entityID] = null;
     }
     public T GetComponent<T>(EntityComponent entityID) where T : IComponent
     {
-        return (T)_allComponents[TypeRegistry<T>.typeID].Get(entityID);
+        return (T)_allComponents[TypeRegistry<T>.typeID][entityID];
     }
     public bool TryGetComponent<T>(EntityComponent entityID, out T component) where T : IComponent
     {
         if (_allComponents.ContainsKey(TypeRegistry<T>.typeID))
         {
-            if (_allComponents[TypeRegistry<T>.typeID].Contains(entityID))
+            if (_allComponents[TypeRegistry<T>.typeID][entityID] != null)
             {
-                component = (T)_allComponents[TypeRegistry<T>.typeID].Get(entityID);
+                component = (T)_allComponents[TypeRegistry<T>.typeID][entityID];
                 return true;
             }
         }
@@ -101,29 +102,29 @@ internal class ComponentsManager : Singleton<ComponentsManager>
 
     public bool EntityContains<T>(EntityComponent entity) where T : IComponent
     {
-        return _allComponents[TypeRegistry<T>.typeID].Contains(entity);
+        return _allComponents[TypeRegistry<T>.typeID][entity.id] != null;
     }
 
     public void ClearComponents<T>() where T : IComponent
     {
         if (!_allComponents.ContainsKey(TypeRegistry<T>.typeID))
         {
-            _allComponents.Add(TypeRegistry<T>.typeID, new InnerType(entitiesCount));
+            _allComponents.Add(TypeRegistry<T>.typeID, new IComponent[entitiesCount]);
         }
         else
         {
-           _allComponents[TypeRegistry<T>.typeID].Clear();
+           _allComponents[TypeRegistry<T>.typeID] = new IComponent[entitiesCount];
         }
     }
 
     public void ForEach<T1>(Action<EntityComponent, T1> lambda) where T1 : IComponent
     {
-        var t1s = _allComponents[TypeRegistry<T1>.typeID];
-        var entities = _allComponents[TypeRegistry<EntityComponent>.typeID];
+        IComponent[] t1s = _allComponents[TypeRegistry<T1>.typeID];
+        IComponent[] entities = _allComponents[TypeRegistry<EntityComponent>.typeID];
 
         for(uint i = 0; i < t1s.Length; i++)
         {
-            if (!t1s.Contains(i))
+            if (t1s[i] == null)
             {
                 continue;
             }
@@ -134,13 +135,13 @@ internal class ComponentsManager : Singleton<ComponentsManager>
 
     public void ForEach<T1, T2>(Action<EntityComponent, T1, T2> lambda) where T1 : IComponent where T2 : IComponent
     {
-        var t1s = _allComponents[TypeRegistry<T1>.typeID];
-        var t2s = _allComponents[TypeRegistry<T2>.typeID];
-        var entities = _allComponents[TypeRegistry<EntityComponent>.typeID];
+        IComponent[] t1s = _allComponents[TypeRegistry<T1>.typeID];
+        IComponent[] t2s = _allComponents[TypeRegistry<T2>.typeID];
+        IComponent[] entities = _allComponents[TypeRegistry<EntityComponent>.typeID];
 
         for(uint i = 0; i < t1s.Length; i++)
         {
-            if (!t1s.Contains(i) || !t2s.Contains(i))
+            if (t1s[i] == null || t2s[i] == null)
             {
                 continue;
             }
@@ -151,14 +152,14 @@ internal class ComponentsManager : Singleton<ComponentsManager>
 
     public void ForEach<T1, T2, T3>(Action<EntityComponent, T1, T2, T3> lambda) where T1 : IComponent where T2 : IComponent where T3 : IComponent
     {
-        var t1s = _allComponents[TypeRegistry<T1>.typeID];
-        var t2s = _allComponents[TypeRegistry<T2>.typeID];
-        var t3s = _allComponents[TypeRegistry<T3>.typeID];
-        var entities = _allComponents[TypeRegistry<EntityComponent>.typeID];
+        IComponent[] t1s = _allComponents[TypeRegistry<T1>.typeID];
+        IComponent[] t2s = _allComponents[TypeRegistry<T2>.typeID];
+        IComponent[] t3s = _allComponents[TypeRegistry<T3>.typeID];
+        IComponent[] entities = _allComponents[TypeRegistry<EntityComponent>.typeID];
 
         for(uint i = 0; i < t1s.Length; i++)
         {
-            if (!t1s.Contains(i) || !t2s.Contains(i) || !t3s.Contains(i))
+            if (t1s[i] == null || t2s[i] == null || t3s[i] == null)
             {
                 continue;
             }
@@ -169,15 +170,16 @@ internal class ComponentsManager : Singleton<ComponentsManager>
 
     public void ForEach<T1, T2, T3, T4>(Action<EntityComponent, T1, T2, T3, T4> lambda) where T1 : IComponent where T2 : IComponent where T3 : IComponent where T4 : IComponent
     {
-        var t1s = _allComponents[TypeRegistry<T1>.typeID];
-        var t2s = _allComponents[TypeRegistry<T2>.typeID];
-        var t3s = _allComponents[TypeRegistry<T3>.typeID];
-        var t4s = _allComponents[TypeRegistry<T4>.typeID];
-        var entities = _allComponents[TypeRegistry<EntityComponent>.typeID];
+        IComponent[] t1s = _allComponents[TypeRegistry<T1>.typeID];
+        IComponent[] t2s = _allComponents[TypeRegistry<T2>.typeID];
+        IComponent[] t3s = _allComponents[TypeRegistry<T3>.typeID];
+        IComponent[] t4s = _allComponents[TypeRegistry<T4>.typeID];
+        IComponent[] entities = _allComponents[TypeRegistry<EntityComponent>.typeID];
 
+        // Itération simultanée sur les 4 tableaux
         for(uint i = 0; i < t1s.Length; i++)
         {
-            if (!t1s.Contains(i) || !t2s.Contains(i) || !t3s.Contains(i) || !t4s.Contains(i))
+            if (t1s[i] == null || t2s[i] == null || t3s[i] == null || t4s[i] == null)
             {
                 continue;
             }

@@ -7,8 +7,8 @@ using UnityEngine;
 using InnerType = System.Collections.Generic.Dictionary<uint, IComponent>;
 using AllComponents = System.Collections.Generic.Dictionary<uint, System.Collections.Generic.Dictionary<uint, IComponent>>;
 #else
-//using InnerType = ...; // TODO CHANGEZ MOI, UTILISEZ VOTRE PROPRE TYPE ICI
-using AllComponents = System.Collections.Generic.Dictionary<uint, IComponent[]>; // DONE CHANGEZ MOI, UTILISEZ VOTRE PROPRE TYPE ICI
+//using InnerType = ...; // Non necessaire
+using AllComponents = System.Collections.Generic.Dictionary<uint, IComponent[]>;
 #endif
 
 // Appeler GetHashCode sur un Type est couteux. Cette classe sert a precalculer le hashcode
@@ -73,7 +73,6 @@ internal class ComponentsManager : Singleton<ComponentsManager>
     {
         if (!_allComponents.ContainsKey(TypeRegistry<T>.typeID))
         {
-            //_allComponents[TypeRegistry<T>.typeID] = new Dictionary<uint, IComponent>();
             _allComponents[TypeRegistry<T>.typeID] = new IComponent[entitiesCount];
         }
         _allComponents[TypeRegistry<T>.typeID][entityID] = component;   

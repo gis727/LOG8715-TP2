@@ -175,7 +175,6 @@ internal class ComponentsManager : Singleton<ComponentsManager>
         IComponent[] t4s = _allComponents[TypeRegistry<T4>.typeID];
         IComponent[] entities = _allComponents[TypeRegistry<EntityComponent>.typeID];
 
-        // Itération simultanée sur les 4 tableaux
         for(uint i = 0; i < t1s.Length; i++)
         {
             if (t1s[i] == null || t2s[i] == null || t3s[i] == null || t4s[i] == null)
